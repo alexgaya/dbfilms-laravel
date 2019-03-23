@@ -117,12 +117,6 @@ class UserController extends Controller {
             ]);
 
             if ($validate->fails()) {
-                /* $data = [
-                  'status' => 'error',
-                  'code' => 400,
-                  'message' => 'El usuario no está identificado'
-                  ];
-                  return response()->json($data, $data['code']); */
                 $data['error'] = $validate->errors();
             } else {
                 unset($params_array['id']);
@@ -131,18 +125,8 @@ class UserController extends Controller {
                 unset($params_array['remember_token']);
                 unset($params_array['password']);
 
-
-                // Actualizar usuario en bbdd
                 $user_update = User::where(['id' => $user->sub])->update($params_array);
 
-
-                // Devolver array con el resultado
-                /* $data = [
-                  'code' => 200,
-                  'status' => 'success',
-                  'user' => $user,
-                  'changes' => $params_array
-                  ]; */
             }
         }
 
@@ -152,13 +136,6 @@ class UserController extends Controller {
             $data['changes'] = $params_array;
         }
 
-        /* else {
-          $data = [
-          'status' => 'error',
-          'code' => 400,
-          'message' => 'El usuario no está identificado'
-          ];
-          } */
         return response()->json($data, $data['code']);
     }
 
