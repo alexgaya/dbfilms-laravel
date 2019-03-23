@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use App\User;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller {
 
@@ -84,9 +86,7 @@ class UserController extends Controller {
                 $email = $params_array['email'];
                 $pwd = hash('sha256', $params_array['password']);
 
-                $data = (!empty($params_array['getToken'])) 
-                        ? $jwtAuth->signup($email, $pwd, true) 
-                        : $jwtAuth->signup($email, $pwd);
+                $data = (!empty($params_array['getToken'])) ? $jwtAuth->signup($email, $pwd, true) : $jwtAuth->signup($email, $pwd);
             }
         }
         return response()->json($data, $data['code']);
@@ -101,47 +101,64 @@ class UserController extends Controller {
         $json = $request->input('json', null);
         $params_array = json_decode($json, true);
 
+        $data = $this->data('error', 400, 'El usuario no está identificado');
+
         if ($checkToken && !empty($params_array)) {
 
             $user = $jwtAuth->checkToken($token, true);
 
             $validate = \Validator::make($params_array, [
                         'name' => 'required',
-                        'email' => 'required|email|unique:users' . $user->sub
+                        'email' => [
+                            'required',
+                            'email',
+                            Rule::unique('users')->ignore($user->sub),
+                        ],
             ]);
 
             if ($validate->fails()) {
-                $data = [
-                    'status' => 'error',
-                    'code' => 400,
-                    'message' => 'El usuario no está identificado'
-                ];
-                return response()->json($data, $data['code']);
+                /* $data = [
+                  'status' => 'error',
+                  'code' => 400,
+                  'message' => 'El usuario no está identificado'
+                  ];
+                  return response()->json($data, $data['code']); */
+                $data['error'] = $validate->errors();
+            } else {
+                unset($params_array['id']);
+                unset($params_array['role']);
+                unset($params_array['created_at']);
+                unset($params_array['remember_token']);
+                unset($params_array['password']);
+
+
+                // Actualizar usuario en bbdd
+                $user_update = User::where(['id' => $user->sub])->update($params_array);
+
+
+                // Devolver array con el resultado
+                /* $data = [
+                  'code' => 200,
+                  'status' => 'success',
+                  'user' => $user,
+                  'changes' => $params_array
+                  ]; */
             }
-
-            unset($params_array['id']);
-            unset($params_array['role']);
-            unset($params_array['created_at']);
-            unset($params_array['remember_token']);
-            unset($params_array['password']);
-
-            // Actualizar usuario en bbdd
-            $user_update = User::where('id', $user->sub)->update($params_array);
-
-            // Devolver array con el resultado
-            $data = [
-                'code' => 200,
-                'status' => 'success',
-                'user' => $user,
-                'changes' => $params_array
-            ];
-        } else {
-            $data = [
-                'status' => 'error',
-                'code' => 400,
-                'message' => 'El usuario no está identificado'
-            ];
         }
+
+        if (isset($user_update) && $user_update) {
+            $data = $this->data('success', 200, 'Los cambios se han guardado');
+            $data['user'] = $user;
+            $data['changes'] = $params_array;
+        }
+
+        /* else {
+          $data = [
+          'status' => 'error',
+          'code' => 400,
+          'message' => 'El usuario no está identificado'
+          ];
+          } */
         return response()->json($data, $data['code']);
     }
 
