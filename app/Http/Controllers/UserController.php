@@ -177,15 +177,38 @@ class UserController extends Controller {
             $file = \Storage::disk('users')->get($filename);
             return new Response($file, 200);
         } else {
-            /*$data = [
-                'code' => 404,
-                'status' => 'error',
-                'message' => 'La imagen no existe.'
-            ];*/
+            /* $data = [
+              'code' => 404,
+              'status' => 'error',
+              'message' => 'La imagen no existe.'
+              ]; */
             $data = $this->data('error', 404, 'La imagen no existe');
 
             return response()->json($data, $data['code']);
         }
+    }
+
+    public function detail($id) {
+        $user = User::find($id);
+
+        if (is_object($user)) {
+            /*$data = [
+                'code' => 200,
+                'status' => 'success',
+                'user' => $user
+            ];*/
+            $data = $this->data('success', 200, 'Usuario encontrado');
+            $data['user'] = $user;
+        } else {
+            /*$data = [
+                'code' => 404,
+                'status' => 'error',
+                'message' => 'El usuario no existe.'
+            ];*/
+            $data = $this->data('error', 404, 'El usuario no existe');
+        }
+
+        return response()->json($data, $data['code']);
     }
 
 }
