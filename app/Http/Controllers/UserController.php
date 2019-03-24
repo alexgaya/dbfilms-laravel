@@ -126,7 +126,6 @@ class UserController extends Controller {
                 unset($params_array['password']);
 
                 $user_update = User::where(['id' => $user->sub])->update($params_array);
-
             }
         }
 
@@ -137,6 +136,56 @@ class UserController extends Controller {
         }
 
         return response()->json($data, $data['code']);
+    }
+
+    public function upload(Request $request) {
+        // Recoger los datos de la petición
+        $image = $request->file('file0');
+
+        // Validación de la imagen
+        $validate = \Validator::make($request->all(), [
+                    'file0' => 'required|image|mimes:jpg,jpeg,png,gif'
+        ]);
+
+        // Guardar imagen
+        if (!$image || $validate->fails()) {
+            /* $data = [
+              'code' => 400,
+              'status' => 'error',
+              'message' => 'Error al subir imagen'
+              ]; */
+            $data = $this->data('error', 400, 'Error al subir imagen');
+        } else {
+            $image_name = time() . $image->getClientOriginalName();
+            \Storage::disk('users')->put($image_name, \File::get($image));
+
+            /* $data = [
+              'code' => 200,
+              'status' => 'success',
+              'image' => $image_name
+              ]; */
+            $data = $this->data('success', 200, $image_name);
+        }
+
+        return response()->json($data, $data['code']);
+    }
+
+    public function getImage($filename) {
+        $isset = \Storage::disk('users')->exists($filename);
+
+        if ($isset) {
+            $file = \Storage::disk('users')->get($filename);
+            return new Response($file, 200);
+        } else {
+            /*$data = [
+                'code' => 404,
+                'status' => 'error',
+                'message' => 'La imagen no existe.'
+            ];*/
+            $data = $this->data('error', 404, 'La imagen no existe');
+
+            return response()->json($data, $data['code']);
+        }
     }
 
 }

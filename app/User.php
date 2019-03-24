@@ -41,4 +41,6 @@ class User extends Authenticatable
     public function films() {
         return $this->hasMany('App\Film');
     }
+    
+    
 }

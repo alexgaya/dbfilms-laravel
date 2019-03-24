@@ -11,6 +11,8 @@
 |
 */
 
+use App\Http\Middleware\ApiAuthMiddleware;
+
 /*Route::get('/', function () {
     return view('welcome');
 });
@@ -22,3 +24,4 @@ Route::get('/film/pruebas', 'FilmController@pruebas');*/
 Route::post('/api/register', 'UserController@register');
 Route::post('/api/login', 'UserController@login');
 Route::post('/api/user/update', 'UserController@update');
+Route::post('api/user/upload', 'UserController@upload')->middleware(ApiAuthMiddleware::class);

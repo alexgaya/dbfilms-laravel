@@ -16,4 +16,17 @@ class Film extends Model
     public function category() {
         return $this->belongsTo('App\Category', 'category_id');
     }
+
+        
+    public function seen() {
+        return $this->belongsToMany('App\User', 'user_seen_film');
+    }
+    
+    public function favourite() {
+        return $this->belongsToMany('App\User', 'user_favourite_film');
+    }
+    
+    public function pending() {
+        return $this->belongsToMany('App\User', 'user_pending_film');
+    }
 }
