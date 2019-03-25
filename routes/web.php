@@ -13,18 +13,27 @@
 
 use App\Http\Middleware\ApiAuthMiddleware;
 
-/* Route::get('/', function () {
-  return view('welcome');
-  });
 
-  Route::get('/usuario/pruebas', 'UserController@pruebas');
-  Route::get('/categoria/pruebas', 'CategoryController@pruebas');
-  Route::get('/film/pruebas', 'FilmController@pruebas'); */
-
+// User
 Route::post('/api/register', 'UserController@register');
 Route::post('/api/login', 'UserController@login');
-Route::put('/api/user/update', 'UserController@update');
+Route::put('/api/user/update', 'UserController@update')
+        ->middleware(ApiAuthMiddleware::class);
 Route::post('api/user/upload', 'UserController@upload')
         ->middleware(ApiAuthMiddleware::class);
-Route::get('api/user/avatar/{filename}', 'UserController@getImage');
-Route::get('api/user/detail/{id}', 'UserController@detail');
+Route::get('api/user/avatar/{filename}', 'UserController@getImage')
+        ->middleware(ApiAuthMiddleware::class); 
+Route::get('api/user/detail/{id}', 'UserController@detail')
+        ->middleware(ApiAuthMiddleware::class);
+Route::get('api/user/favourite', 'UserController@getFavouritePosts')
+        ->middleware(ApiAuthMiddleware::class);
+/*Route::get('api/user/favourite/films', 'UserController@getFavouriteFilms')
+        ->middleware(ApiAuthMiddleware::class);*/
+
+// Category
+Route::resource('api/category', 'CategoryController')
+        ->middleware(ApiAuthMiddleware::class);
+
+// Post
+Route::resource('api/post', 'PostController')
+        ->middleware(ApiAuthMiddleware::class);

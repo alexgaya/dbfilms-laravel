@@ -4,9 +4,10 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Film extends Model
+class Post extends Model
 {
-    protected $table = 'films';
+    protected $table = 'posts';
+    
     
     // Relación Many to One
     public function user() {
@@ -19,14 +20,18 @@ class Film extends Model
 
         
     public function seen() {
-        return $this->belongsToMany('App\User', 'user_seen_film');
+        return $this->belongsToMany('App\User', 'user_seen_post');
     }
     
     public function favourite() {
-        return $this->belongsToMany('App\User', 'user_favourite_film');
+        return $this->belongsToMany('App\User', 'user_favourite_post');
     }
     
     public function pending() {
-        return $this->belongsToMany('App\User', 'user_pending_film');
+        return $this->belongsToMany('App\User', 'user_pending_post');
+    }
+    
+    public function seeing() {
+        return $this->belongsToMany('App\User', 'user_seeing_post');
     }
 }

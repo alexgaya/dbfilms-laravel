@@ -23,7 +23,7 @@ CREATE TABLE categories(
     CONSTRAINT pk_categories PRIMARY KEY(id)
 )ENGINE=InnoDb;
 
-CREATE TABLE films(
+CREATE TABLE posts(
     id                  int(255) auto_increment NOT NULL,
     user_id             int(255) NOT NULL,
     category_id         int(255) NOT NULL,
@@ -35,34 +35,43 @@ CREATE TABLE films(
     rating              int(255) DEFAULT NULL,
     duration            int(255) DEFAULT NULL,
     times_seen          int(255) DEFAULT NULL,
-    CONSTRAINT pk_films PRIMARY KEY(id),
-    CONSTRAINT fk_film_user FOREIGN KEY(user_id) REFERENCES users(id),
-    CONSTRAINT fk_film_category FOREIGN KEY(category_id) REFERENCES categories(id)
+    CONSTRAINT pk_posts PRIMARY KEY(id),
+    CONSTRAINT fk_post_user FOREIGN KEY(user_id) REFERENCES users(id),
+    CONSTRAINT fk_post_category FOREIGN KEY(category_id) REFERENCES categories(id)
 )ENGINE=InnoDb;
 
-CREATE TABLE user_seen_film(
+CREATE TABLE user_seen_post (
     id                  int(255) auto_increment NOT NULL,
     user_id             int(255) NOT NULL,
-    film_id             int(255) NOT NULL,
-    CONSTRAINT pk_film_seen PRIMARY KEY(id),
-    CONSTRAINT fk_user_seen_film FOREIGN KEY(user_id) REFERENCES users(id),
-    CONSTRAINT fk_film_seen FOREIGN KEY(film_id) REFERENCES films(id)
+    post_id             int(255) NOT NULL,
+    CONSTRAINT pk_post_seen PRIMARY KEY(id),
+    CONSTRAINT fk_user_seen_post FOREIGN KEY(user_id) REFERENCES users(id),
+    CONSTRAINT fk_post_seen FOREIGN KEY(post_id) REFERENCES posts(id)
 )ENGINE=InnoDb;
 
-CREATE TABLE user_pending_film(
+CREATE TABLE user_pending_post(
     id                  int(255) auto_increment NOT NULL,
     user_id             int(255) NOT NULL,
-    film_id             int(255) NOT NULL,
-    CONSTRAINT pk_film_pending PRIMARY KEY(id),
-    CONSTRAINT fk_user_pending_film FOREIGN KEY(user_id) REFERENCES users(id),
-    CONSTRAINT fk_film_pending FOREIGN KEY(film_id) REFERENCES films(id)
+    post_id             int(255) NOT NULL,
+    CONSTRAINT pk_post_pending PRIMARY KEY(id),
+    CONSTRAINT fk_user_pending_post FOREIGN KEY(user_id) REFERENCES users(id),
+    CONSTRAINT fk_post_pending FOREIGN KEY(post_id) REFERENCES posts(id)
 )ENGINE=InnoDb;
 
-CREATE TABLE user_favourite_film(
+CREATE TABLE user_favourite_post(
     id                  int(255) auto_increment NOT NULL,
     user_id             int(255) NOT NULL,
-    film_id             int(255) NOT NULL,
-    CONSTRAINT pk_film_favourite PRIMARY KEY(id),
-    CONSTRAINT fk_user_favourite_film FOREIGN KEY(user_id) REFERENCES users(id),
-    CONSTRAINT fk_film_favourite FOREIGN KEY(film_id) REFERENCES films(id)
+    post_id             int(255) NOT NULL,
+    CONSTRAINT pk_post_favourite PRIMARY KEY(id),
+    CONSTRAINT fk_user_favourite_post FOREIGN KEY(user_id) REFERENCES users(id),
+    CONSTRAINT fk_post_favourite FOREIGN KEY(post_id) REFERENCES posts(id)
+)ENGINE=InnoDb;
+
+CREATE TABLE user_seeing_post (
+    id                  int(255) auto_increment NOT NULL,
+    user_id             int(255) NOT NULL,
+    post_id             int(255) NOT NULL,
+    CONSTRAINT pk_post_seeing PRIMARY KEY(id),
+    CONSTRAINT fk_user_seeing_post FOREIGN KEY(user_id) REFERENCES users(id),
+    CONSTRAINT fk_post_seeing FOREIGN KEY(post_id) REFERENCES posts(id)
 )ENGINE=InnoDb;

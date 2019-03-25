@@ -38,8 +38,24 @@ class User extends Authenticatable
     ];*/
     
     // Relación One to Many
-    public function films() {
-        return $this->hasMany('App\Film');
+    public function posts() {
+        return $this->hasMany('App\Post');
+    }
+    
+    public function seen() {
+        return $this->belongsToMany('App\Post', 'user_seen_post');
+    }
+    
+    public function favourite() {
+        return $this->belongsToMany('App\Post', 'user_favourite_post');
+    }
+    
+    public function pending() {
+        return $this->belongsToMany('App\Post', 'user_pending_post');
+    }
+    
+    public function seeing() {
+        return $this->belongsToMany('App\Post', 'user_seeing_post');
     }
     
     

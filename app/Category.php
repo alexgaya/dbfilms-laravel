@@ -10,7 +10,7 @@ class Category extends Model
     
     
     // Relación One to Many
-    public function films() {
-        return $this->hasMany('App\Film');
+    public function posts() {
+        return $this->hasMany('App\Post');
     }
 }
