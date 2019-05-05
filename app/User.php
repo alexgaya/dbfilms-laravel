@@ -16,7 +16,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password', 'description'
+        'nick', 'email', 'password', 'description'
     ];
 
     /**
@@ -27,6 +27,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
+    
+    protected $table = 'User';
 
     /**
      * The attributes that should be cast to native types.
@@ -38,25 +40,49 @@ class User extends Authenticatable
     ];*/
     
     // Relación One to Many
-    public function posts() {
-        return $this->hasMany('App\Post');
+    public function film() {
+        return $this->hasMany('App\Film');
     }
     
-    public function seen() {
-        return $this->belongsToMany('App\Post', 'user_seen_post');
+    public function chapter() {
+        return $this->hasMany('App\Chapter');
     }
     
-    public function favourite() {
-        return $this->belongsToMany('App\Post', 'user_favourite_post');
+    public function serie() {
+        return $this->hasMany('App\Serie');
     }
     
-    public function pending() {
-        return $this->belongsToMany('App\Post', 'user_pending_post');
+    public function favouriteFilms() {
+        return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->where('favourite', 1);
     }
     
-    public function seeing() {
-        return $this->belongsToMany('App\Post', 'user_seeing_post');
+    public function likedFilms() {
+        return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->where('like', 1);
     }
+    
+    public function seenFilms() {
+        return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->where('seen', 1);
+    }
+    
+    public function pendingFilms() {
+        return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->where('pending', 1);
+    }
+    
+//    public function seen() {
+//        return $this->belongsToMany('App\Post', 'user_seen_post');
+//    }
+//    
+//    public function favourite() {
+//        return $this->belongsToMany('App\Post', 'user_favourite_post');
+//    }
+//    
+//    public function pending() {
+//        return $this->belongsToMany('App\Post', 'user_pending_post');
+//    }
+//    
+//    public function seeing() {
+//        return $this->belongsToMany('App\Post', 'user_seeing_post');
+//    }
     
     
 }
