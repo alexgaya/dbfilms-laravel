@@ -45,7 +45,7 @@ Route::post('api/admin', 'AdminController@createUser')->middleware(ApiAuthMiddle
 
 
 // Film
-Route::resource('api/film', 'FilmController')->middleware(ApiAuthMiddleware::class);
+Route::resource('api/film', 'FilmController');
 Route::post('api/film/upload', 'FilmController@upload')->middleware(ApiAuthMiddleware::class);
 Route::get('api/film/image/{filename}', 'FilmController@getImage');
 Route::get('api/film/user/{id}', 'FilmController@getFilmsByUser')->middleware(ApiAuthMiddleware::class);
