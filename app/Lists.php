@@ -25,10 +25,10 @@ class Lists extends Model
     }
     
     public function filmsLimited() {
-        return $this->belongsToMany('App\Film', 'List_has_Film', 'list_id', 'film_id')->take(10);
+        return $this->belongsToMany('App\Film', 'List_has_Film', 'list_id', 'film_id')->select(['id', 'image'])->take(3);
     }
     
     public function seriesLimited() {
-        return $this->belongsToMany('App\Serie', 'List_has_Serie', 'list_id', 'serie_id')->take(10);
+        return $this->belongsToMany('App\Serie', 'List_has_Serie', 'list_id', 'serie_id')->select(['id', 'image'])->take(2);
     }
 }

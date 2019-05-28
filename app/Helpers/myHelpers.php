@@ -2,8 +2,10 @@
 
 namespace App\Helpers;
 
-class myHelpers {
+use Illuminate\Http\Request;
+use App\Helpers\JwtAuth;
 
+class myHelpers {
 
     public static function data($status, $code, $message) {
         $data = [
@@ -13,6 +15,26 @@ class myHelpers {
         ];
 
         return $data;
+    }
+
+    public static function getIdentity(Request $request) {
+        $jwtAuth = new JwtAuth();
+        $token = $request->header('Authorization', null);
+        $user = $jwtAuth->checkToken($token, true);
+
+        return $user;
+    }
+    
+    public static function checkAdmin(Request $request) {
+//        $jwtAuth = new JwtAuth();
+//        $token = $request->header('Authorization', null);
+//        $user = $jwtAuth->checkToken($token, true);
+        $user = myHelpers::getIdentity($request);
+        if ($user->perms === 3) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

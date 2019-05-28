@@ -13,7 +13,16 @@ class ListsController extends Controller {
 
     public function index() {
 
-        $lists = Lists::all()->load('filmsLimited')->load('seriesLimited');
+        //$lists = Lists::all()->load('filmsLimited')->load('seriesLimited');
+        $lists = Lists::select('id', 'name')
+//                ->load('filmsLimited')
+//                ->load('seriesLimited')
+                ->paginate(12);
+
+        foreach ($lists as $list) {
+            $list->load('filmsLimited')
+                    ->load('seriesLimited');
+        }
 
         return response()->json([
                     'code' => 200,
@@ -195,12 +204,6 @@ class ListsController extends Controller {
     }
 
     public function storeFilm($id, $idFilm, Request $request) {
-        // Recoger datos por POST
-        //$json = $request->input('json', null);
-        //$params = json_decode($json);
-        //$params_array = json_decode($json, true);
-        //if (!empty($params_array)) {
-        // Conseguir el usuario identificado
         $user = $this->getIdentity($request);
 
         $check = Lists::where('id', $id)
@@ -226,14 +229,9 @@ class ListsController extends Controller {
 
         return response()->json($data, $data['code']);
     }
-    
+
     public function storeSerie($id, $idSerie, Request $request) {
-        // Recoger datos por POST
-        //$json = $request->input('json', null);
-        //$params = json_decode($json);
-        //$params_array = json_decode($json, true);
-        //if (!empty($params_array)) {
-        // Conseguir el usuario identificado
+
         $user = $this->getIdentity($request);
 
         $check = Lists::where('id', $id)
@@ -259,7 +257,7 @@ class ListsController extends Controller {
 
         return response()->json($data, $data['code']);
     }
-    
+
     public function deleteFilm($id, $idFilm, Request $request) {
         $user = $this->getIdentity($request);
 
@@ -273,14 +271,14 @@ class ListsController extends Controller {
         $film = ListFilm::where('film_id', $idFilm)
                 ->where('list_id', $id)
                 ->first();
-        
+
         if (empty($film)) {
             $data = \myHelpers::data('error', 404, 'This film is not in the list');
             return response()->json($data, $data['code']);
         }
-        
+
         $film->delete();
-        
+
         $data = [
             'code' => 200,
             'status' => 'success',
@@ -289,7 +287,7 @@ class ListsController extends Controller {
 
         return response()->json($data, $data['code']);
     }
-    
+
     public function deleteSerie($id, $idSerie, Request $request) {
         $user = $this->getIdentity($request);
 
@@ -303,14 +301,14 @@ class ListsController extends Controller {
         $serie = ListSerie::where('serie_id', $idSerie)
                 ->where('list_id', $id)
                 ->first();
-        
+
         if (empty($serie)) {
             $data = \myHelpers::data('error', 404, 'This serie is not in the list');
             return response()->json($data, $data['code']);
         }
-        
+
         $serie->delete();
-        
+
         $data = [
             'code' => 200,
             'status' => 'success',

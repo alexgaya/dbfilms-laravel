@@ -7,18 +7,27 @@ use Illuminate\Http\Response;
 use App\Film;
 use App\Helpers\JwtAuth;
 use App\User;
+use App\Comment;
 use App\Helpers\myHelpers;
+use App\UserFilm;
+use Illuminate\Support\Facades\DB;
+use App\Link;
 
 class FilmController extends Controller {
 
-//    public function __construct() {
-//        $this->middleware('api.auth');
-//    }
-
-    public function index() {
-
-        $films = Film::all();
-
+    public function index(Request $request) {
+        $user = $this->getIdentity($request);
+        $films = Film::select('user_id', 'id', 'name', 'image')->paginate(12);
+        foreach ($films as $film) {
+            if (UserFilm::where('film_id', $film->id)
+                            ->where('user_id', $user->sub)
+                            ->where('seen', true)
+                            ->exists()) {
+                $film->seen = true;
+            } else {
+                $film->seen = false;
+            }
+        }
         return response()->json([
                     'code' => 200,
                     'status' => 'success',
@@ -26,13 +35,36 @@ class FilmController extends Controller {
         ]);
     }
 
-    public function show($id) {
+    public function show($id, Request $request) {
+        $user = $this->getIdentity($request);
         $film = Film::find($id);
-
-//                ->load('user');
 
         if (is_object($film)) {
             $film->load('user');
+            $film->load('genre');
+            $film->load('comment');
+            $film->load('link');
+
+            foreach ($film->link as $link) {
+                $link->load('user');
+                $link->load('language');
+            }
+
+            foreach ($film->comment as $comment) {
+                $comment->load('user');
+            }
+
+
+            if (UserFilm::where('film_id', $film->id)
+                            ->where('user_id', $user->sub)
+                            ->where('favourite', true)
+                            ->exists()) {
+                $film->fav = true;
+            } else {
+                $film->fav = false;
+            }
+
+
             $data = [
                 'code' => 200,
                 'status' => 'success',
@@ -66,24 +98,53 @@ class FilmController extends Controller {
             // Validar los datos
             $validate = \Validator::make($params_array, [
                         'name' => 'required',
-                            //'description' => 'required',
-                            //'image' => 'required'
+                        'duration' => 'required',
+                        'genres' => 'required',
+                        'links' => 'required'
             ]);
 
             if ($validate->fails()) {
                 $data = [
                     'code' => 400,
                     'status' => 'error',
-                    'message' => 'No se ha guardado el film, faltan datos'
+                    'message' => 'Film not saved, missing data'
                 ];
+                $data["errors"] = $validate->errors();
             } else {
                 $film = new Film();
                 $film->user_id = $user->sub;
-
                 $film->name = $params->name;
-//                $film->description = $params->description;
-//                $film->image = $params->image;
+                $film->description = !empty($params->description) ? $params->description : null;
+                $film->image = !empty($params->image) ? $params->image : null;
+                $film->trailer = !empty($params->trailer) ? $params->trailer : null;
+                $film->duration = $params->duration;
+                //LOS Géneros!!!!!!!!!!!!!!
                 $film->save();
+
+                if (!empty($params->genres) && count($params->genres) > 0) {
+                    foreach ($params->genres as $genre) {
+                        DB::table('Genre_has_Film')
+                                ->insert([
+                                    "film_id" => $film->id,
+                                    "genre_id" => $genre
+                        ]);
+                    }
+                }
+                
+                if (!empty($params->links) && count($params->links) > 0) {
+                    foreach($params->links as $link) {
+                        $linkk = new Link();
+                        $linkk->film_id = $film->id;
+                        $linkk->user_id = $user->sub;
+                        $linkk->url = $link->url;
+                        $linkk->language_id = $link->language->id;
+                        $linkk->save();
+                    }
+                }
+
+                $film->load("genre");
+                $film->load("link");
+
 
                 $data = [
                     'code' => 200,
@@ -266,23 +327,6 @@ class FilmController extends Controller {
                         ], 200);
     }
 
-//    public function getLikedFilmsByUser($id, Request $request) {
-//        $user = $this->getIdentity($request);
-//        
-//        if ($user->sub != $id && $user->perms != 3)
-//            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
-//        
-//        $films = User::find($id)->load('likedFilms');
-//        
-//        if(empty($films)) {
-//            $data = myHelpers::data("error", 404, "Not found");
-//        } else {
-//            $data = myHelpers::data("success", 200, "Found");
-//            $data["films"] = $films;
-//        }
-//        return response()->json($data, $data["code"]);
-//    }
-
     public function getLikedFilmsByUser(Request $request) {
         $user = $this->getIdentity($request);
         $films = User::find($user->sub)->load('likedFilms');
@@ -296,21 +340,93 @@ class FilmController extends Controller {
 
         return response()->json($data, $data["code"]);
     }
-    
-    public function getSeenFilmsByUser(Request $request) {
-        $user = $this->getIdentity($request);
-        $films = User::find($user->sub)->load('seenFilms');
-        $data = myHelpers::data("success", 200, "done");
 
-        if (empty($films)) {
-            $data = myHelpers::data("error", 500, "Internal error");
-        } else {
-            $data["films"] = $films;
+    public function getFilmsByFilter(Request $request) {
+        if (!empty($request->input('lang')) && empty($request->input('genre'))) {
+            $lang = $request->input('lang');
+            $films = DB::table('Film')
+                    ->join('Link', function($join) {
+                        $join->on('Film.id', '=', 'Link.film_id');
+                    })
+                    ->join('Language', function($join) use($lang) {
+                        $join->on('Link.language_id', '=', 'Language.id')
+                        ->where('Language.id', $lang);
+                    })
+                    ->select('Film.user_id', 'Film.id', 'Film.name', 'Film.image')
+                    ->distinct()
+                    ->paginate(12);
+        } else if (!empty($request->input('lang')) && !empty($request->input('genre'))) {
+            $genre = $request->input('genre');
+            $lang = $request->input('lang');
+            $films = DB::table('Film')
+                    ->join('Link', function($join) {
+                        $join->on('Film.id', '=', 'Link.film_id');
+                    })
+                    ->join('Language', function($join) use($lang) {
+                        $join->on('Link.language_id', '=', 'Language.id')
+                        ->where('Language.id', $lang);
+                    })
+                    ->join('Genre_has_Film', function($join) use($genre) {
+                        $join->on('Genre_has_Film.film_id', '=', 'Film.id')
+                        ->where('Genre_has_Film.genre_id', $genre);
+                    })
+                    ->select('Film.user_id', 'Film.id', 'Film.name', 'Film.image')
+                    ->distinct()
+                    ->paginate(12);
+        } else if (empty($request->input('lang')) && !empty($request->input('genre'))) {
+            $genre = $request->input('genre');
+            $films = DB::table('Film')
+                    ->join('Genre_has_Film', function($join) use($genre) {
+                        $join->on('Genre_has_Film.film_id', '=', 'Film.id')
+                        ->where('Genre_has_Film.genre_id', $genre);
+                    })
+                    ->select('Film.user_id', 'Film.id', 'Film.name', 'Film.image')
+                    ->distinct()
+                    ->paginate(12);
         }
+        $data = myHelpers::data("success", 200, "OK");
+        $data['films'] = $films;
 
-        return response()->json($data, $data["code"]);
+        return response()->json($data, $data['code']);
     }
-    
+
+    public function getSeenFilmsByUser(Request $request) {
+//        $user = $this->getIdentity($request);
+//        $films = User::find($user->sub)->seenFilms;
+//        $data = myHelpers::data("success", 200, "done");
+//
+//        if (empty($films)) {
+//            $data = myHelpers::data("error", 500, "Internal error");
+//        } else {
+//            $data["films"] = $films;
+//        }
+//
+//        return response()->json($data, $data["code"]);
+        $user = $this->getIdentity($request);
+        $films = DB::table('Film')
+                //->join('User_film', 'Film.id', '=', 'User_film.film_id')
+                ->join('User_film', function($join) use($user) {
+                    $join->on('Film.id', '=', 'User_film.film_id')
+                    ->where('User_film.user_id', $user->sub)
+                    ->where('User_film.seen', true);
+                })
+                ->select('Film.user_id', 'Film.id', 'Film.name', 'Film.image')
+                ->paginate(12);
+        //var_dump($films); die();
+//        foreach ($films as $film) {
+//            if (UserFilm::where('film_id', $film->id)->where('user_id', $user->sub)->exists()) {
+//                $film->seen = true;
+//            } else {
+//                $film->seen = false;
+//            }
+//        }
+        return response()->json([
+                    'code' => 200,
+                    'status' => 'success',
+                    'films' => $films
+        ]);
+    }
+
     public function getPendingFilmsByUser(Request $request) {
         $user = $this->getIdentity($request);
         $films = User::find($user->sub)->load('pendingFilms');
@@ -324,7 +440,7 @@ class FilmController extends Controller {
 
         return response()->json($data, $data["code"]);
     }
-    
+
     public function getFavouriteFilmsByUser(Request $request) {
         $user = $this->getIdentity($request);
         $films = User::find($user->sub)->load('favouriteFilms');
@@ -337,6 +453,61 @@ class FilmController extends Controller {
         }
 
         return response()->json($data, $data["code"]);
+    }
+
+    public function getAllLinksFromFilm($id) {
+        $film = Film::find($id);
+
+        if (empty($film)) {
+            $data = myHelpers::data("error", 404, "Film does not exist");
+        } else {
+            $links = $film->link;
+            $data = myHelpers::data("success", 200, "Done");
+            $data["links"] = $links;
+        }
+
+        return response()->json($data, $data['code']);
+    }
+
+    public function comment($id, Request $request) {
+        $json = $request->input('json', null);
+        $params_array = json_decode($json, true);
+
+        $data = myHelpers::data("error", 500, "Server Error, Please try again.");
+
+        if (empty($params_array)) {
+            $data = myHelpers::data("error", 400, "Content message is required.");
+            return response()->json($data, $data['code']);
+        }
+
+        $validate = \Validator::make($params_array, [
+                    'content' => 'required'
+        ]);
+
+        if ($validate->fails()) {
+            $data = myHelpers::data("error", 400, "Content message is required.");
+            $data['errors'] = $validate->errors();
+            return response()->json($data, $data['code']);
+        }
+
+        $user = $this->getIdentity($request);
+
+        $film = Film::find($id);
+
+
+        if (empty($film)) {
+            $data = myHelpers::data("error", 404, "Film does not exist");
+        } else {
+            $comment = new Comment();
+            $comment->film_id = $id;
+            $comment->user_id = $user->sub;
+            $comment->content = $params_array['content'];
+            if ($comment->save()) {
+                $data = myHelpers::data("success", 200, "Done");
+            }
+        }
+
+        return response()->json($data, $data['code']);
     }
 
     private function getIdentity(Request $request) {

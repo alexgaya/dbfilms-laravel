@@ -16,7 +16,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'nick', 'email', 'password', 'description'
+        'nick', 'email', 'password', 'description', 'banned', 'status', 'hidden', 'perms'
     ];
 
     /**
@@ -61,28 +61,19 @@ class User extends Authenticatable
     }
     
     public function seenFilms() {
-        return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->where('seen', 1);
+        //return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->select(['user_id','id','name','image','seen'])->where('seen', 1)->paginate(12);
+        return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->select(['id', 'name', 'image'])->where('seen', 1);
     }
     
     public function pendingFilms() {
         return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->where('pending', 1);
     }
     
-//    public function seen() {
-//        return $this->belongsToMany('App\Post', 'user_seen_post');
-//    }
-//    
-//    public function favourite() {
-//        return $this->belongsToMany('App\Post', 'user_favourite_post');
-//    }
-//    
-//    public function pending() {
-//        return $this->belongsToMany('App\Post', 'user_pending_post');
-//    }
-//    
-//    public function seeing() {
-//        return $this->belongsToMany('App\Post', 'user_seeing_post');
-//    }
+    public function unReadMessages() {
+        return $this->hasMany('App\PrivMessage', 'receiver_id')->where('read', 0);
+    }
     
-    
+    public function readMessages() {
+        return $this->hasMany('App\PrivMessage', 'receiver_id')->where('read', 1);
+    }
 }

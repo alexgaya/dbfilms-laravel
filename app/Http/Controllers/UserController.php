@@ -12,6 +12,8 @@ use App\UserFilm;
 use App\UserSerie;
 use App\Film;
 use App\Serie;
+use App\Follow;
+use App\PrivMessage;
 
 class UserController extends Controller {
 
@@ -20,7 +22,7 @@ class UserController extends Controller {
         $json = $request->input('json', null);
         $params_array = array_map('trim', json_decode($json, true));
 
-        $data = $this->data('error', 400, 'El usuario no se ha creado');
+        $data = $this->data('error', 400, 'Error, the user was not created. Please try again.');
 
         if (!empty($params_array)) {
             $validate = \Validator::make($params_array, [
@@ -37,7 +39,7 @@ class UserController extends Controller {
         }
 
         if (isset($user_created) && $user_created) {
-            $data = $this->data('success', 200, 'El usuario se ha creado correctamente');
+            $data = $this->data('success', 200, 'The user has been created successfully');
             $data['user'] = $user_created;
         }
 
@@ -80,7 +82,7 @@ class UserController extends Controller {
         $json = $request->input('json', null);
         $params_array = json_decode($json, true);
 
-        $data = $this->data('error', 400, 'Error con las credenciales');
+        $data = $this->data('error', 400, 'Credentials error');
 
         if (!empty($params_array)) {
             $validate = \Validator::make($params_array, [
@@ -97,6 +99,43 @@ class UserController extends Controller {
                 $pwd = hash('sha256', $params_array['password']);
 
                 $data = (!empty($params_array['getToken'])) ? $jwtAuth->signup($email, $pwd, true) : $jwtAuth->signup($email, $pwd);
+            }
+        }
+        return response()->json($data, $data['code']);
+    }
+    
+    public function changePassword(Request $request) {
+        $json = $request->input('json', null);
+        $params_array = json_decode($json, true);
+        $user = $this->getIdentity($request);
+
+        $data = $this->data('error', 400, 'Credentials error');
+        
+        if (!empty($params_array)) {
+            $validate = \Validator::make($params_array, [
+                        'password' => 'required',
+                        'newPassword' => 'required'
+            ]);
+
+            if ($validate->fails()) {
+                $data['error'] = $validate->errors();
+            } else {
+//                $jwtAuth = new \JwtAuth();
+//
+//                $email = $params_array['email'];
+                $pwd = hash('sha256', $params_array['password']);
+                $newPwd = hash('sha256', $params_array['newPassword']);
+//                $data = (!empty($params_array['getToken'])) ? $jwtAuth->signup($email, $pwd, true) : $jwtAuth->signup($email, $pwd);
+                $updateUser = User::find($user->sub);
+                //var_dump([$updateUser->password, $pwd, $newPwd]); die();
+                
+                if ($updateUser->password == $pwd) {
+                    $updateUser->password = $newPwd;
+                    $updateUser->save();
+                    $data = $this->data("success", 200, "Changes Saved");
+                }
+                
+                
             }
         }
         return response()->json($data, $data['code']);
@@ -122,7 +161,7 @@ class UserController extends Controller {
                         'email' => [
                             'required',
                             'email',
-                            Rule::unique('users')->ignore($user->sub),
+                            Rule::unique('User')->ignore($user->sub),
                         ],
             ]);
 
@@ -195,21 +234,7 @@ class UserController extends Controller {
 
         return response()->json($data, $data['code']);
     }
-
-//    public function getFavouritePosts(Request $request) {
-//        $token = $request->header('Authorization');
-//
-//        $jwtAuth = new \JwtAuth();
-//        $user = $jwtAuth->checkToken($token, true);
-//
-//        $posts = User::find($user->sub)->favourite()->get();
-//
-//        $data = $this->data('success', 200, 'OK');
-//        $data['posts'] = $posts;
-//
-//        return response()->json($data, $data['code']);
-//    }
-
+    
     public function likeFilm($id, Request $request) {
         
         $filmExists = Film::find($id);
@@ -500,7 +525,127 @@ class UserController extends Controller {
         return response()->json($data, $data['code']);
     }
     
+    public function getFollowingList(Request $request){
+        $user = $this->getIdentity($request);
+        
+        $usersFollowing = [];
+        $following = Follow::All()->where('user_id', $user->sub);
+        foreach($following as $f){
+            array_push($usersFollowing, $f->userFollowed);
+        }
+        
+        $data = myHelpers::data("success", 200, "OK");
+        $data['following'] = $usersFollowing;
+        return response()->json($data, $data['code']);
+    }
+    
+    public function getFollowersList(Request $request){
+        $user = $this->getIdentity($request);
+        
+        $usersFollowers = [];
+        $following = Follow::All()->where('user_followed', $user->sub);
+        foreach($following as $f){
+            array_push($usersFollowers, $f->userFollowMe);
+        }
+        
+        $data = myHelpers::data("success", 200, "OK");
+        $data['followers'] = $usersFollowers;
+        return response()->json($data, $data['code']);
+    }
+    
+    public function follow($id, Request $request){
+        $userExists = User::find($id);
+        
+        if(empty($userExists))
+            return response()->json(["status" => "error", "message" => "This user does not exist"], 404);
+        
+        $user = $this->getIdentity($request);
+        
+        $check = Follow::where('user_id', $user->sub)
+                ->where('user_followed', $id)
+                ->first();
+ 
+        $data = myHelpers::data("success", 200, "Followed $userExists->nick");
+        
+        if (empty($check)) {
+            $follow = new Follow();
+            $follow->user_id = $user->sub;
+            $follow->user_followed = $id;
+            $follow->save();
+        } else {
+            $check->delete();
+            $data = myHelpers::data("success", 200, "Unfollowed $userExists->nick");
+        }
+        
+        return response()->json($data, $data['code']);
+    }
+    
+    public function sendPrivateMessage($id, Request $request){
+        $userExists = User::find($id);
+        
+        if(empty($userExists))
+            return response()->json(["status" => "error", "message" => "This user does not exist"], 404);
+        
+        $json = $request->input('json', null);
+        $params_array = json_decode($json, true);
+        $user = $this->getIdentity($request);
 
+        $data = $this->data('error', 400, 'error');
+
+        if (!empty($params_array)) {
+            $validate = \Validator::make($params_array, [
+                        'text' => 'required'
+            ]);
+
+            if ($validate->fails()) {
+                $data['error'] = $validate->errors();
+            } else {
+                $privMes = new PrivMessage();
+                $privMes->sender_id = $user->sub;
+                $privMes->receiver_id = $id;
+                $privMes->text = $params_array['text'];
+                $privMes->save();
+                $data = myHelpers::data("success", 200, "Private message send to $userExists->nick");
+            }
+        }
+        return response()->json($data, $data['code']);
+    }
+    
+    public function getMainData(Request $request) {
+        $user = $this->getIdentity($request);
+        $unReadMessages = User::find($user->sub)
+                ->unReadMessages;
+        
+        
+        foreach($unReadMessages as $mess){
+            $mess->load('senderUser');
+        }
+        
+        $readMessages = User::find($user->sub)->readMessages;
+        
+        foreach($readMessages as $readMess) {
+            $readMess->load('senderUser');
+        }
+        
+        
+//        $usersFollowing = [];
+//        $following = Follow::All()->where('user_id', $user->sub);
+//        foreach($following as $f){
+//            array_push($usersFollowing, $f->userFollowed);
+//        }
+
+        $countFollowing = Follow::where('user_id', $user->sub)->count();
+        
+        $countFollowers = Follow::where('user_followed', $user->sub)->count();
+        
+        $data = myHelpers::data("success", 200, "OK");
+        $data['unReadMessages'] = $unReadMessages;
+        $data['readMessages'] = $readMessages;
+        $data['countFollowing'] = $countFollowing;
+        $data['countFollowers'] = $countFollowers;
+        return response()->json($data, $data['code']);
+    }
+    
     private function getIdentity(Request $request) {
         $jwtAuth = new JwtAuth();
         $token = $request->header('Authorization', null);
@@ -508,35 +653,4 @@ class UserController extends Controller {
 
         return $user;
     }
-
-    /* public function getFavouriteFilms(Request $request) {
-      $token = $request->header('Authorization');
-
-      $jwtAuth = new \JwtAuth();
-      $user = $jwtAuth->checkToken($token, true);
-
-      $films = \Illuminate\Support\Facades\DB::table('posts')
-      ->join('categories', function ($join) {
-      $join->on('posts.category_id', '=', 'categories.id')
-      ->where('categories.id', '=', 1);
-      })
-      ->get();
-
-      $films_user = \Illuminate\Support\Facades\DB::table('user_favourite_post')
-      ->select('post_id')
-      ->where('user_id', $user->sub)
-      ->get();
-      $asd = null;
-      foreach ($films_user as $e) {
-      $asd .= \Illuminate\Support\Facades\DB::table('posts')
-      ->select('*')
-      ->where('id', $e->post_id)
-      ->get();
-      }
-
-
-      return response()->json($asd, 200);
-
-
-      } */
 }

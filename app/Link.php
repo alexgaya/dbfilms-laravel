@@ -13,7 +13,7 @@ class Link extends Model
     ];  
     
     public function user() {
-        return $this->belongsTo('App\User', 'user_id');
+        return $this->belongsTo('App\User', 'user_id')->select(['id', 'nick', 'image']);
     }
     
     public function film() {
@@ -22,5 +22,9 @@ class Link extends Model
     
     public function chapter() {
         return $this->belongsTo('App\Chapter', 'chapter_id');
+    }
+    
+    public function language() {
+        return $this->belongsTo('App\Language');
     }
 }
