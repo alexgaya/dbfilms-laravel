@@ -130,9 +130,9 @@ class FilmController extends Controller {
                         ]);
                     }
                 }
-                
+
                 if (!empty($params->links) && count($params->links) > 0) {
-                    foreach($params->links as $link) {
+                    foreach ($params->links as $link) {
                         $linkk = new Link();
                         $linkk->film_id = $film->id;
                         $linkk->user_id = $user->sub;
@@ -513,6 +513,10 @@ class FilmController extends Controller {
     private function getIdentity(Request $request) {
         $jwtAuth = new JwtAuth();
         $token = $request->header('Authorization', null);
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
         $user = $jwtAuth->checkToken($token, true);
 
         return $user;

@@ -15,7 +15,10 @@ class ApiAuthMiddleware {
      */
     public function handle($request, Closure $next) {
         $token = $request->header('Authorization');
-
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
         $jwtAuth = new \JwtAuth();
         $checkToken = $jwtAuth->checkToken($token);
 

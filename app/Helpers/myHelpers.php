@@ -20,15 +20,16 @@ class myHelpers {
     public static function getIdentity(Request $request) {
         $jwtAuth = new JwtAuth();
         $token = $request->header('Authorization', null);
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
         $user = $jwtAuth->checkToken($token, true);
 
         return $user;
     }
-    
+
     public static function checkAdmin(Request $request) {
-//        $jwtAuth = new JwtAuth();
-//        $token = $request->header('Authorization', null);
-//        $user = $jwtAuth->checkToken($token, true);
         $user = myHelpers::getIdentity($request);
         if ($user->perms === 3) {
             return true;

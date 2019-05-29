@@ -10,30 +10,30 @@ use App\Chapter;
 use App\Serie;
 use App\Link;
 
-class ChapterController extends Controller
-{
+class ChapterController extends Controller {
+
     public function index() {
         $chapters = Chapter::all();
-        
+
         return response()->json([
                     'code' => 200,
                     'status' => 'success',
                     'chapters' => $chapters
         ]);
     }
-    
+
     public function show($id) {
         $chapter = Chapter::find($id);
-                //->load('link');
+        //->load('link');
 
         if (!empty($chapter) && is_object($chapter)) {
             $chapter->load('comment');
             $chapter->load('link');
-            foreach($chapter->link as $link){
+            foreach ($chapter->link as $link) {
                 $link->load('language');
                 $link->load('user');
             }
-            foreach($chapter->comment as $comment){
+            foreach ($chapter->comment as $comment) {
                 $comment->load('user');
             }
             $data = [
@@ -51,7 +51,7 @@ class ChapterController extends Controller
 
         return response()->json($data, $data['code']);
     }
-    
+
     public function store(Request $request) {
         // Recoger datos por POST
         $json = $request->input('json', null);
@@ -84,15 +84,15 @@ class ChapterController extends Controller
                 ];
                 $data['errors'] = $validate->errors();
             } else {
-                
+
                 $check = Serie::find($params->serie_id);
-                
-                if(empty($check))
+
+                if (empty($check))
                     return response()->json(['status' => 'error', 'message' => 'Serie does not exist'], 404);
-                
+
 //                if($check->user_id != $user->sub)
 //                    return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
-                
+
                 $chapter = new Chapter();
                 $chapter->name = $params->name;
                 $chapter->user_id = $user->sub;
@@ -100,12 +100,12 @@ class ChapterController extends Controller
                 $chapter->id_ep = $params->id_ep;
                 $chapter->duration = $params->duration;
                 $chapter->season = $params->season;
-                
+
                 $chapter->save();
-                
-                
+
+
                 if (!empty($params->links) && count($params->links) > 0) {
-                    foreach($params->links as $link) {
+                    foreach ($params->links as $link) {
                         $linkk = new Link();
                         $linkk->chapter_id = $chapter->id;
                         $linkk->user_id = $user->sub;
@@ -114,7 +114,7 @@ class ChapterController extends Controller
                         $linkk->save();
                     }
                 }
-                
+
                 $chapter->load("link");
 
                 $data = [
@@ -136,7 +136,7 @@ class ChapterController extends Controller
         // Devolver la respuesta
         return response()->json($data, $data['code']);
     }
-    
+
     public function update($id, Request $request) {
         // Recoger los datos por post
         $json = $request->input('json', null);
@@ -198,30 +198,35 @@ class ChapterController extends Controller
         // Devolver respuesta
         return response()->json($data, $data['code']);
     }
-    
+
     public function getAllLinksFromChapter($id) {
         $chapter = Chapter::find($id);
-        
-        if(empty($chapter)) {
+
+        if (empty($chapter)) {
             //return response()->json(['status' => 'error', 'message' => 'Chapter does not exist'], 401);
             $data = myHelpers::data("error", 404, "Chapter does not exist");
         } else {
             $links = $chapter->link;
-            foreach($links as $link) {
+            foreach ($links as $link) {
                 $link->load("language");
             }
             $data = myHelpers::data("success", 200, "Done");
             $data["links"] = $links;
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
+
     private function getIdentity(Request $request) {
         $jwtAuth = new JwtAuth();
         $token = $request->header('Authorization', null);
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
         $user = $jwtAuth->checkToken($token, true);
 
         return $user;
     }
+
 }

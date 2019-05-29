@@ -103,14 +103,14 @@ class UserController extends Controller {
         }
         return response()->json($data, $data['code']);
     }
-    
+
     public function changePassword(Request $request) {
         $json = $request->input('json', null);
         $params_array = json_decode($json, true);
         $user = $this->getIdentity($request);
 
         $data = $this->data('error', 400, 'Credentials error');
-        
+
         if (!empty($params_array)) {
             $validate = \Validator::make($params_array, [
                         'password' => 'required',
@@ -128,14 +128,12 @@ class UserController extends Controller {
 //                $data = (!empty($params_array['getToken'])) ? $jwtAuth->signup($email, $pwd, true) : $jwtAuth->signup($email, $pwd);
                 $updateUser = User::find($user->sub);
                 //var_dump([$updateUser->password, $pwd, $newPwd]); die();
-                
+
                 if ($updateUser->password == $pwd) {
                     $updateUser->password = $newPwd;
                     $updateUser->save();
                     $data = $this->data("success", 200, "Changes Saved");
                 }
-                
-                
             }
         }
         return response()->json($data, $data['code']);
@@ -143,6 +141,10 @@ class UserController extends Controller {
 
     public function update(Request $request) {
         $token = $request->header('Authorization');
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
 
         $jwtAuth = new \JwtAuth();
         $checkToken = $jwtAuth->checkToken($token);
@@ -234,27 +236,27 @@ class UserController extends Controller {
 
         return response()->json($data, $data['code']);
     }
-    
+
     public function likeFilm($id, Request $request) {
-        
+
         $filmExists = Film::find($id);
-        
-        if(empty($filmExists))
+
+        if (empty($filmExists))
             return response()->json(["status" => "error", "message" => "This film does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = UserFilm::where('film_id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Changes saved, liked");
-        
+
         if (empty($check)) {
             // Crear + like 1
             $userFilm = new UserFilm();
             $userFilm->user_id = $user->sub;
-            $userFilm->film_id = $id; 
+            $userFilm->film_id = $id;
             $userFilm->like = 1;
             $userFilm->save();
         } else if (!empty($check) && $check->like) {
@@ -269,29 +271,29 @@ class UserController extends Controller {
         } else {
             $data = myHelpers::data("error", 404, "Error");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
+
     public function favouriteFilm($id, Request $request) {
         $filmExists = Film::find($id);
-        
-        if(empty($filmExists))
+
+        if (empty($filmExists))
             return response()->json(["status" => "error", "message" => "This film does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = UserFilm::where('film_id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Changes saved, fav");
-        
+
         if (empty($check)) {
             // Crear + like 1
             $userFilm = new UserFilm();
             $userFilm->user_id = $user->sub;
-            $userFilm->film_id = $id; 
+            $userFilm->film_id = $id;
             $userFilm->favourite = 1;
             $userFilm->save();
         } else if (!empty($check) && $check->favourite) {
@@ -306,28 +308,28 @@ class UserController extends Controller {
         } else {
             $data = myHelpers::data("error", 404, "Error");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
+
     public function pendingFilm($id, Request $request) {
         $filmExists = Film::find($id);
-        
-        if(empty($filmExists))
+
+        if (empty($filmExists))
             return response()->json(["status" => "error", "message" => "This film does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = UserFilm::where('film_id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Changes saved, pending");
-        
+
         if (empty($check)) {
             $userFilm = new UserFilm();
             $userFilm->user_id = $user->sub;
-            $userFilm->film_id = $id; 
+            $userFilm->film_id = $id;
             $userFilm->pending = 1;
             $userFilm->save();
         } else if (!empty($check) && $check->pending) {
@@ -341,28 +343,28 @@ class UserController extends Controller {
         } else {
             $data = myHelpers::data("error", 404, "Error");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
+
     public function seenFilm($id, Request $request) {
         $filmExists = Film::find($id);
-        
-        if(empty($filmExists))
+
+        if (empty($filmExists))
             return response()->json(["status" => "error", "message" => "This film does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = UserFilm::where('film_id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Changes saved, seen");
-        
+
         if (empty($check)) {
             $userFilm = new UserFilm();
             $userFilm->user_id = $user->sub;
-            $userFilm->film_id = $id; 
+            $userFilm->film_id = $id;
             $userFilm->seen = 1;
             $userFilm->save();
         } else if (!empty($check) && $check->seen) {
@@ -376,30 +378,30 @@ class UserController extends Controller {
         } else {
             $data = myHelpers::data("error", 404, "Error");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
+
     public function likeSerie($id, Request $request) {
-        
+
         $serieExists = Serie::find($id);
-        
-        if(empty($serieExists))
+
+        if (empty($serieExists))
             return response()->json(["status" => "error", "message" => "This serie does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = UserSerie::where('serie_id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Changes saved, liked");
-        
+
         if (empty($check)) {
             // Crear + like 1
             $userSerie = new UserSerie();
             $userSerie->user_id = $user->sub;
-            $userSerie->serie_id = $id; 
+            $userSerie->serie_id = $id;
             $userSerie->like = 1;
             $userSerie->save();
         } else if (!empty($check) && $check->like) {
@@ -414,29 +416,29 @@ class UserController extends Controller {
         } else {
             $data = myHelpers::data("error", 404, "Error");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
+
     public function favouriteSerie($id, Request $request) {
         $serieExists = Serie::find($id);
-        
-        if(empty($serieExists))
+
+        if (empty($serieExists))
             return response()->json(["status" => "error", "message" => "This serie does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = UserSerie::where('serie_id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Changes saved, fav");
-        
+
         if (empty($check)) {
             // Crear + like 1
             $userSerie = new UserSerie();
             $userSerie->user_id = $user->sub;
-            $userSerie->serie_id = $id; 
+            $userSerie->serie_id = $id;
             $userSerie->favourite = 1;
             $userSerie->save();
         } else if (!empty($check) && $check->favourite) {
@@ -451,28 +453,28 @@ class UserController extends Controller {
         } else {
             $data = myHelpers::data("error", 404, "Error");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
+
     public function pendingSerie($id, Request $request) {
         $serieExists = Serie::find($id);
-        
-        if(empty($serieExistseExists))
+
+        if (empty($serieExistseExists))
             return response()->json(["status" => "error", "message" => "This serie does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = UserSerie::where('serie_id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Changes saved, pending");
-        
+
         if (empty($check)) {
             $userSerie = new UserSerie();
             $userSerie->user_id = $user->sub;
-            $userSerie->serie_id = $id; 
+            $userSerie->serie_id = $id;
             $userSerie->pending = 1;
             $userSerie->save();
         } else if (!empty($check) && $check->pending) {
@@ -486,28 +488,28 @@ class UserController extends Controller {
         } else {
             $data = myHelpers::data("error", 404, "Error");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
+
     public function seenSerie($id, Request $request) {
         $serieExists = Serie::find($id);
-        
-        if(empty($serieExists))
+
+        if (empty($serieExists))
             return response()->json(["status" => "error", "message" => "This serie does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = UserSerie::where('serie_id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Changes saved, seen");
-        
+
         if (empty($check)) {
             $userSerie = new UserSerie();
             $userSerie->user_id = $user->sub;
-            $userSerie->serie_id = $id; 
+            $userSerie->serie_id = $id;
             $userSerie->seen = 1;
             $userSerie->save();
         } else if (!empty($check) && $check->seen) {
@@ -521,52 +523,52 @@ class UserController extends Controller {
         } else {
             $data = myHelpers::data("error", 404, "Error");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
-    public function getFollowingList(Request $request){
+
+    public function getFollowingList(Request $request) {
         $user = $this->getIdentity($request);
-        
+
         $usersFollowing = [];
         $following = Follow::All()->where('user_id', $user->sub);
-        foreach($following as $f){
+        foreach ($following as $f) {
             array_push($usersFollowing, $f->userFollowed);
         }
-        
+
         $data = myHelpers::data("success", 200, "OK");
         $data['following'] = $usersFollowing;
         return response()->json($data, $data['code']);
     }
-    
-    public function getFollowersList(Request $request){
+
+    public function getFollowersList(Request $request) {
         $user = $this->getIdentity($request);
-        
+
         $usersFollowers = [];
         $following = Follow::All()->where('user_followed', $user->sub);
-        foreach($following as $f){
+        foreach ($following as $f) {
             array_push($usersFollowers, $f->userFollowMe);
         }
-        
+
         $data = myHelpers::data("success", 200, "OK");
         $data['followers'] = $usersFollowers;
         return response()->json($data, $data['code']);
     }
-    
-    public function follow($id, Request $request){
+
+    public function follow($id, Request $request) {
         $userExists = User::find($id);
-        
-        if(empty($userExists))
+
+        if (empty($userExists))
             return response()->json(["status" => "error", "message" => "This user does not exist"], 404);
-        
+
         $user = $this->getIdentity($request);
-        
+
         $check = Follow::where('user_id', $user->sub)
                 ->where('user_followed', $id)
                 ->first();
- 
+
         $data = myHelpers::data("success", 200, "Followed $userExists->nick");
-        
+
         if (empty($check)) {
             $follow = new Follow();
             $follow->user_id = $user->sub;
@@ -576,16 +578,16 @@ class UserController extends Controller {
             $check->delete();
             $data = myHelpers::data("success", 200, "Unfollowed $userExists->nick");
         }
-        
+
         return response()->json($data, $data['code']);
     }
-    
-    public function sendPrivateMessage($id, Request $request){
+
+    public function sendPrivateMessage($id, Request $request) {
         $userExists = User::find($id);
-        
-        if(empty($userExists))
+
+        if (empty($userExists))
             return response()->json(["status" => "error", "message" => "This user does not exist"], 404);
-        
+
         $json = $request->input('json', null);
         $params_array = json_decode($json, true);
         $user = $this->getIdentity($request);
@@ -610,24 +612,24 @@ class UserController extends Controller {
         }
         return response()->json($data, $data['code']);
     }
-    
+
     public function getMainData(Request $request) {
         $user = $this->getIdentity($request);
         $unReadMessages = User::find($user->sub)
                 ->unReadMessages;
-        
-        
-        foreach($unReadMessages as $mess){
+
+
+        foreach ($unReadMessages as $mess) {
             $mess->load('senderUser');
         }
-        
+
         $readMessages = User::find($user->sub)->readMessages;
-        
-        foreach($readMessages as $readMess) {
+
+        foreach ($readMessages as $readMess) {
             $readMess->load('senderUser');
         }
-        
-        
+
+
 //        $usersFollowing = [];
 //        $following = Follow::All()->where('user_id', $user->sub);
 //        foreach($following as $f){
@@ -635,9 +637,9 @@ class UserController extends Controller {
 //        }
 
         $countFollowing = Follow::where('user_id', $user->sub)->count();
-        
+
         $countFollowers = Follow::where('user_followed', $user->sub)->count();
-        
+
         $data = myHelpers::data("success", 200, "OK");
         $data['unReadMessages'] = $unReadMessages;
         $data['readMessages'] = $readMessages;
@@ -645,12 +647,17 @@ class UserController extends Controller {
         $data['countFollowers'] = $countFollowers;
         return response()->json($data, $data['code']);
     }
-    
+
     private function getIdentity(Request $request) {
         $jwtAuth = new JwtAuth();
         $token = $request->header('Authorization', null);
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
         $user = $jwtAuth->checkToken($token, true);
 
         return $user;
     }
+
 }

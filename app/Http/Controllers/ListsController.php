@@ -321,6 +321,10 @@ class ListsController extends Controller {
     private function getIdentity(Request $request) {
         $jwtAuth = new JwtAuth();
         $token = $request->header('Authorization', null);
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
         $user = $jwtAuth->checkToken($token, true);
 
         return $user;

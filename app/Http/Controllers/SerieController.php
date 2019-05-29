@@ -31,9 +31,9 @@ class SerieController extends Controller {
                     'code' => 200,
                     'status' => 'success',
                     'series' => $series
-        ], 200);
+                        ], 200);
     }
-    
+
     public function getSeriesWithoutPaginate(Request $request) {
         $user = $this->getIdentity($request);
         $series = Serie::select('user_id', 'id', 'name')
@@ -59,9 +59,10 @@ class SerieController extends Controller {
             }
             $seasons = 0;
             foreach ($serie->chapters as $chapter) {
-                if ($chapter->season > $seasons) $seasons = $chapter->season;
+                if ($chapter->season > $seasons)
+                    $seasons = $chapter->season;
             }
-            
+
             $serie->seasons = $seasons;
 
             if (UserSerie::where('serie_id', $serie->id)
@@ -124,7 +125,7 @@ class SerieController extends Controller {
                 $serie->trailer = !empty($params->trailer) ? $params->trailer : null;
                 $serie->save();
 
-                
+
                 if (!empty($params->genres) && count($params->genres) > 0) {
                     foreach ($params->genres as $genre) {
                         DB::table('Genre_has_Serie')
@@ -134,9 +135,9 @@ class SerieController extends Controller {
                         ]);
                     }
                 }
-                
+
                 $serie->load("genre");
-                
+
                 $data = [
                     'code' => 200,
                     'status' => 'success',
@@ -335,7 +336,7 @@ class SerieController extends Controller {
                     'series' => $series
         ]);
     }
-    
+
     public function comment($id, Request $request) {
         $json = $request->input('json', null);
         $params_array = json_decode($json, true);
@@ -380,6 +381,10 @@ class SerieController extends Controller {
     private function getIdentity(Request $request) {
         $jwtAuth = new JwtAuth();
         $token = $request->header('Authorization', null);
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
         $user = $jwtAuth->checkToken($token, true);
 
         return $user;

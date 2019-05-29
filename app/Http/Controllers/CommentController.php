@@ -69,14 +69,14 @@ class CommentController extends Controller {
 //        }
 //        
 //        return response()->json($data, $data['code']);
-        
+
         $user = $this->getIdentity($request);
 
         // Conseguir el registro
         $comment = Comment::where('id', $id)
                 ->where('user_id', $user->sub)
                 ->first();
-        
+
         if (!empty($comment) && is_object($comment) && $comment != null && ($user->sub == $comment->user_id || $user->perms == 3)) {
 
             // Borrar el registro
@@ -123,10 +123,14 @@ class CommentController extends Controller {
 
         return 0;
     }
-    
+
     private function getIdentity(Request $request) {
         $jwtAuth = new JwtAuth();
         $token = $request->header('Authorization', null);
+        if (empty($token)) {
+            $headers = apache_request_headers();
+            $token = $headers['Authorization'];
+        }
         $user = $jwtAuth->checkToken($token, true);
 
         return $user;
