@@ -8,13 +8,17 @@ use App\Lists;
 use App\ListFilm;
 use App\ListSerie;
 use App\Helpers\JwtAuth;
+use App\UserFilm;
+use App\UserSerie;
+use App\Helpers\myHelpers;
+use App\UserList;
 
 class ListsController extends Controller {
 
-    public function index() {
-
+    public function index(Request $request) {
+        $user = myHelpers::getIdentity($request);
         //$lists = Lists::all()->load('filmsLimited')->load('seriesLimited');
-        $lists = Lists::select('id', 'name')
+        $lists = Lists::select('id', 'name', 'user_id')
 //                ->load('filmsLimited')
 //                ->load('seriesLimited')
                 ->paginate(12);
@@ -22,6 +26,10 @@ class ListsController extends Controller {
         foreach ($lists as $list) {
             $list->load('filmsLimited')
                     ->load('seriesLimited');
+            $list->current_user_following = UserList::where('user_id', $user->sub)->where('list_id', $list->id)->where('follow', 1)->exists();
+            $list->followers_count = $list->followers()->count();
+            $list->films_count = $list->films()->count();
+            $list->series_count = $list->series()->count();
         }
 
         return response()->json([
@@ -31,12 +39,56 @@ class ListsController extends Controller {
         ]);
     }
 
-    public function show($id) {
+    public function show($id, Request $request) {
+
         $list = Lists::find($id);
 
         if (is_object($list)) {
+            $user = $this->getIdentity($request);
             $list->load('films');
+
+            foreach ($list->films as $film) {
+                if (UserFilm::where('film_id', $film->id)
+                                ->where('user_id', $user->sub)
+                                ->where('like', true)
+                                ->exists()) {
+                    $film->like = true;
+                } else {
+                    $film->like = false;
+                }
+
+                if (UserFilm::where('film_id', $film->id)
+                                ->where('user_id', $user->sub)
+                                ->where('seen', true)
+                                ->exists()) {
+                    $film->seen = true;
+                } else {
+                    $film->seen = false;
+                }
+            }
+
             $list->load('series');
+
+            foreach ($list->series as $serie) {
+                if (UserSerie::where('serie_id', $serie->id)
+                                ->where('user_id', $user->sub)
+                                ->where('like', true)
+                                ->exists()) {
+                    $serie->like = true;
+                } else {
+                    $serie->like = false;
+                }
+
+                if (UserSerie::where('serie_id', $serie->id)
+                                ->where('user_id', $user->sub)
+                                ->where('seen', true)
+                                ->exists()) {
+                    $serie->seen = true;
+                } else {
+                    $serie->seen = false;
+                }
+            }
+
             $data = [
                 'code' => 200,
                 'status' => 'success',
@@ -102,6 +154,37 @@ class ListsController extends Controller {
         }
 
         // Devolver la respuesta
+        return response()->json($data, $data['code']);
+    }
+    
+    public function destroy($id, Request $request) {
+        // Conseguir usuario identificado
+        $user = $this->getIdentity($request);
+
+        // Conseguir el registro
+        $list = Lists::where('id', $id)
+                ->where('user_id', $user->sub)
+                ->first();
+
+        if (!empty($list)) {
+
+            // Borrar el registro
+            $list->delete();
+
+            // Devolver respuesta
+            $data = [
+                'code' => 200,
+                'status' => 'success',
+                'message' => 'OK'
+            ];
+        } else {
+            $data = [
+                'code' => 404,
+                'status' => 'error',
+                'message' => 'This list does not exist'
+            ];
+        }
+
         return response()->json($data, $data['code']);
     }
 
@@ -172,36 +255,20 @@ class ListsController extends Controller {
         return response()->json($data, $data['code']);
     }
 
-    public function destroy($id, Request $request) {
-        // Conseguir usuario identificado
+    public function getUserLists(Request $request) {
         $user = $this->getIdentity($request);
+        $lists = Lists::select('id', 'name', 'user_id')
+                        ->where('user_id', $user->sub)->get();
 
-        // Conseguir el registro
-        $list = Lists::where('id', $id)
-                ->where('user_id', $user->sub)
-                ->first();
-
-        if (!empty($list) || $user->perms == 3) {
-
-            // Borrar el registro
-            $list->delete();
-
-            // Devolver respuesta
-            $data = [
-                'code' => 200,
-                'status' => 'success',
-                'list' => $list
-            ];
-        } else {
-            $data = [
-                'code' => 404,
-                'status' => 'error',
-                'message' => 'This list does not exist'
-            ];
+        foreach ($lists as $list) {
+            $list->load('films');
+            $list->load('series');
         }
-
+        $data = myHelpers::data("success", 200, "OK");
+        $data['lists'] = $lists;
         return response()->json($data, $data['code']);
     }
+
 
     public function storeFilm($id, $idFilm, Request $request) {
         $user = $this->getIdentity($request);

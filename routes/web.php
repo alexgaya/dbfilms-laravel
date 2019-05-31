@@ -24,11 +24,12 @@ Route::get('api/user/detail/{id}', 'UserController@detail')->middleware(ApiAuthM
 Route::post('api/user/likefilm/{id}', 'UserController@likeFilm')->middleware(ApiAuthMiddleware::class);
 Route::post('api/user/favfilm/{id}', 'UserController@favouriteFilm')->middleware(ApiAuthMiddleware::class);
 Route::post('api/user/pendingfilm/{id}', 'UserController@pendingFilm')->middleware(ApiAuthMiddleware::class);
-Route::post('api/user/seenfilm/{id}', 'UserController@seenSerie')->middleware(ApiAuthMiddleware::class);
+Route::post('api/user/seenfilm/{id}', 'UserController@seenFilm')->middleware(ApiAuthMiddleware::class);
 Route::post('api/user/likeserie/{id}', 'UserController@likeSerie')->middleware(ApiAuthMiddleware::class);
 Route::post('api/user/favserie/{id}', 'UserController@favouriteSerie')->middleware(ApiAuthMiddleware::class);
 Route::post('api/user/pendingserie/{id}', 'UserController@pendingSerie')->middleware(ApiAuthMiddleware::class);
 Route::post('api/user/seenserie/{id}', 'UserController@seenSerie')->middleware(ApiAuthMiddleware::class);
+Route::post('api/user/followlist', 'UserController@followList')->middleware(ApiAuthMiddleware::class);
 Route::get('api/user/main', 'UserController@getMainData')->middleware(ApiAuthMiddleware::class);
 Route::get('api/user/following', 'UserController@getFollowingList')->middleware(ApiAuthMiddleware::class);
 Route::get('api/user/followers', 'UserController@getFollowersList')->middleware(ApiAuthMiddleware::class);
@@ -66,6 +67,7 @@ Route::get('api/serie/user/{id}', 'SerieController@getSeriesByUser')->middleware
 Route::get('api/serieseen', 'SerieController@getSeenSeriesByUser')->middleware(ApiAuthMiddleware::class); 
 Route::post('api/serie/{id}/comment', 'SerieController@comment')->middleware(ApiAuthMiddleware::class);
 Route::get('api/serienopag', 'SerieController@getSeriesWithoutPaginate')->middleware(ApiAuthMiddleware::class);
+Route::get('api/seriefilter', 'SerieController@getSeriesByFilter')->middleware(ApiAuthMiddleware::class);
 
 // Chapter / Episode
 //Route::resource('api/chapter', 'ChapterController')->middleware(ApiAuthMiddleware::class);
@@ -81,6 +83,7 @@ Route::post('api/listfilm/{id}/{idFilm}', 'ListsController@storeFilm')->middlewa
 Route::post('api/listserie/{id}/{idSerie}', 'ListsController@storeSerie')->middleware(ApiAuthMiddleware::class);
 Route::delete('api/listfilm/{id}/{idFilm}', 'ListsController@deleteFilm')->middleware(ApiAuthMiddleware::class);
 Route::delete('api/listserie/{id}/{idSerie}', 'ListsController@deleteSerie')->middleware(ApiAuthMiddleware::class);
+Route::get('api/listuser', 'ListsController@getUserLists')->middleware(ApiAuthMiddleware::class);
 
 // Comments
 Route::get('api/comment', 'CommentController@getComments')->middleware(ApiAuthMiddleware::class);

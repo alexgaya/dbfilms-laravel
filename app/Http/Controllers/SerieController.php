@@ -20,6 +20,15 @@ class SerieController extends Controller {
         foreach ($series as $serie) {
             if (UserSerie::where('serie_id', $serie->id)
                             ->where('user_id', $user->sub)
+                            ->where('like', true)
+                            ->exists()) {
+                $serie->like = true;
+            } else {
+                $serie->like = false;
+            }
+
+            if (UserSerie::where('serie_id', $serie->id)
+                            ->where('user_id', $user->sub)
                             ->where('seen', true)
                             ->exists()) {
                 $serie->seen = true;
@@ -310,6 +319,82 @@ class SerieController extends Controller {
         return response()->json($data, $data['code']);
     }
 
+    public function getSeriessByFilter(Request $request) {
+        $user = $this->getIdentity($request);
+        if (!empty($request->input('lang')) && empty($request->input('genre'))) {
+            $lang = $request->input('lang');
+            $series = DB::table('Serie')
+                    ->join('Chapter', function($join){
+                        $join->on('Chapter.serie_id', '=', 'Serie.id');
+                    })
+                    ->join('Link', function($join) {
+                        $join->on('Chapter.id', '=', 'Link.chapter_id');
+                    })
+                    ->join('Language', function($join) use($lang) {
+                        $join->on('Link.language_id', '=', 'Language.id')
+                        ->where('Language.id', $lang);
+                    })
+                    ->select('Serie.user_id', 'Serie.id', 'Serie.name', 'Serie.image')
+                    ->distinct()
+                    ->paginate(12);
+        } else if (!empty($request->input('lang')) && !empty($request->input('genre'))) {
+            $genre = $request->input('genre');
+            $lang = $request->input('lang');
+            $series = DB::table('Serie')
+                    ->join('Chapter', function($join){
+                        $join->on('Chapter.serie_id', '=', 'Serie.id');
+                    })
+                    ->join('Link', function($join) {
+                        $join->on('Chapter.id', '=', 'Link.chapter_id');
+                    })
+                    ->join('Language', function($join) use($lang) {
+                        $join->on('Link.language_id', '=', 'Language.id')
+                        ->where('Language.id', $lang);
+                    })
+                    ->join('Genre_has_Serie', function($join) use($genre) {
+                        $join->on('Genre_has_Serie.serie_id', '=', 'Serie.id')
+                        ->where('Genre_has_Serie.genre_id', $genre);
+                    })
+                    ->select('Serie.user_id', 'Serie.id', 'Serie.name', 'Serie.image')
+                    ->distinct()
+                    ->paginate(12);
+        } else if (empty($request->input('lang')) && !empty($request->input('genre'))) {
+            $genre = $request->input('genre');
+            $series = DB::table('Serie')
+                    ->join('Genre_has_Serie', function($join) use($genre) {
+                        $join->on('Genre_has_Serie.serie_id', '=', 'Serie.id')
+                        ->where('Genre_has_Serie.genre_id', $genre);
+                    })
+                    ->select('Serie.user_id', 'Serie.id', 'Serie.name', 'Serie.image')
+                    ->distinct()
+                    ->paginate(12);
+        }
+
+        foreach ($series as $serie) {
+            if (UserSerie::where('serie_id', $serie->id)
+                            ->where('user_id', $user->sub)
+                            ->where('like', true)
+                            ->exists()) {
+                $serie->like = true;
+            } else {
+                $serie->like = false;
+            }
+
+            if (UserSerie::where('serie_id', $serie->id)
+                            ->where('user_id', $user->sub)
+                            ->where('seen', true)
+                            ->exists()) {
+                $serie->seen = true;
+            } else {
+                $serie->seen = false;
+            }
+        }
+        $data = myHelpers::data("success", 200, "OK");
+        $data['series'] = $series;
+
+        return response()->json($data, $data['code']);
+    }
+
     public function getSeriesByUser($id) {
         $series = Serie::where('user_id', $id)->get();
 
@@ -329,6 +414,26 @@ class SerieController extends Controller {
                 })
                 ->select('Serie.user_id', 'Serie.id', 'Serie.name', 'Serie.image')
                 ->paginate(12);
+
+        foreach ($series as $serie) {
+            if (UserSerie::where('serie_id', $serie->id)
+                            ->where('user_id', $user->sub)
+                            ->where('like', true)
+                            ->exists()) {
+                $serie->like = true;
+            } else {
+                $serie->like = false;
+            }
+
+            if (UserSerie::where('serie_id', $serie->id)
+                            ->where('user_id', $user->sub)
+                            ->where('seen', true)
+                            ->exists()) {
+                $serie->seen = true;
+            } else {
+                $serie->seen = false;
+            }
+        }
 
         return response()->json([
                     'code' => 200,

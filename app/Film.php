@@ -21,7 +21,7 @@ class Film extends Model
     }
     
     public function link() {
-        return $this->hasMany('App\Link', 'film_id')->select(['id', 'user_id', 'film_id', 'language_id', 'url']);
+        return $this->hasMany('App\Link', 'film_id', 'id')->select(['id', 'user_id', 'film_id', 'language_id', 'url']);
     }
     
     public function genre() {

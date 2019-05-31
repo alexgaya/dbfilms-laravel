@@ -21,6 +21,15 @@ class FilmController extends Controller {
         foreach ($films as $film) {
             if (UserFilm::where('film_id', $film->id)
                             ->where('user_id', $user->sub)
+                            ->where('like', true)
+                            ->exists()) {
+                $film->like = true;
+            } else {
+                $film->like = false;
+            }
+
+            if (UserFilm::where('film_id', $film->id)
+                            ->where('user_id', $user->sub)
                             ->where('seen', true)
                             ->exists()) {
                 $film->seen = true;
@@ -28,6 +37,8 @@ class FilmController extends Controller {
                 $film->seen = false;
             }
         }
+
+
         return response()->json([
                     'code' => 200,
                     'status' => 'success',
@@ -342,6 +353,7 @@ class FilmController extends Controller {
     }
 
     public function getFilmsByFilter(Request $request) {
+        $user = $this->getIdentity($request);
         if (!empty($request->input('lang')) && empty($request->input('genre'))) {
             $lang = $request->input('lang');
             $films = DB::table('Film')
@@ -384,6 +396,26 @@ class FilmController extends Controller {
                     ->distinct()
                     ->paginate(12);
         }
+
+        foreach ($films as $film) {
+            if (UserFilm::where('film_id', $film->id)
+                            ->where('user_id', $user->sub)
+                            ->where('like', true)
+                            ->exists()) {
+                $film->like = true;
+            } else {
+                $film->like = false;
+            }
+
+            if (UserFilm::where('film_id', $film->id)
+                            ->where('user_id', $user->sub)
+                            ->where('seen', true)
+                            ->exists()) {
+                $film->seen = true;
+            } else {
+                $film->seen = false;
+            }
+        }
         $data = myHelpers::data("success", 200, "OK");
         $data['films'] = $films;
 
@@ -412,6 +444,26 @@ class FilmController extends Controller {
                 })
                 ->select('Film.user_id', 'Film.id', 'Film.name', 'Film.image')
                 ->paginate(12);
+
+        foreach ($films as $film) {
+            if (UserFilm::where('film_id', $film->id)
+                            ->where('user_id', $user->sub)
+                            ->where('like', true)
+                            ->exists()) {
+                $film->like = true;
+            } else {
+                $film->like = false;
+            }
+
+            if (UserFilm::where('film_id', $film->id)
+                            ->where('user_id', $user->sub)
+                            ->where('seen', true)
+                            ->exists()) {
+                $film->seen = true;
+            } else {
+                $film->seen = false;
+            }
+        }
         //var_dump($films); die();
 //        foreach ($films as $film) {
 //            if (UserFilm::where('film_id', $film->id)->where('user_id', $user->sub)->exists()) {

@@ -14,6 +14,7 @@ use App\Film;
 use App\Serie;
 use App\Follow;
 use App\PrivMessage;
+use App\UserList;
 
 class UserController extends Controller {
 
@@ -524,6 +525,63 @@ class UserController extends Controller {
             $data = myHelpers::data("error", 404, "Error");
         }
 
+        return response()->json($data, $data['code']);
+    }
+
+    public function followList(Request $request) {
+        $json = $request->input('json', null);
+        $params_array = json_decode($json, true);
+        $data = myHelpers::data("error", 404, "error");
+
+        if (!empty($params_array)) {
+            $validate = \Validator::make($params_array, [
+                        'list_id' => 'required'
+            ]);
+
+            //$list = Lists::find($params_array['list_id']);
+
+//            if (empty($list)) {
+//                $data['message'] = "List not found";
+//                return response()->json($data, $data['code']);
+//            }
+
+            if ($validate->fails()) {
+                $data['error'] = $validate->errors();
+                return response()->json($data, $data['code']);
+            } else {
+//                $userList = new UserList();
+//                $userList->list_id = $params_array['list_id'];
+//                $userList->user_id = $user->sub;
+
+                $user = $this->getIdentity($request);
+
+                $check = UserList::where('list_id', $params_array['list_id'])
+                        ->where('user_id', $user->sub)
+                        ->first();
+
+                
+
+                if (empty($check)) {
+                    $userList = new UserList();
+                    $userList->user_id = $user->sub;
+                    $userList->list_id = $params_array['list_id'];
+                    $userList->follow = 1;
+                    $userList->save();
+                    $data = myHelpers::data("success", 200, "Changes saved, followed");
+                } else if (!empty($check) && $check->follow) {
+                    $check->follow = 0;
+                    $check->save();
+                    $data = myHelpers::data("success", 200, "Changes saved, unfollowed");
+                } else if (!empty($check) && !$check->seen) {
+                    $check->follow = 1;
+                    $check->save();
+                    $data = myHelpers::data("success", 200, "Changes saved, followed");
+                } else {
+                    $data = myHelpers::data("error", 404, "Error");
+                }
+            }
+        }
+        
         return response()->json($data, $data['code']);
     }
 

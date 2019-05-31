@@ -16,6 +16,22 @@ class Lists extends Model
         return $this->belongsTo('App\User', 'user_id');
     }
     
+    public function setFollowAttribute($value){
+        $this->attributes['followers_count'] = $value;
+    }
+    
+    public function setFilmAttribute($value){
+        $this->attributes['films_count'] = $value;
+    }
+    
+    public function setSeriewAttribute($value){
+        $this->attributes['seriea_count'] = $value;
+    }
+    
+    public function followers() {
+        return $this->belongsToMany('App\User', 'User_list', 'list_id', 'user_id')->select(['user_id'])->where('follow', 1);
+    }
+    
     public function films() {
         return $this->belongsToMany('App\Film', 'List_has_Film', 'list_id', 'film_id');
     }
