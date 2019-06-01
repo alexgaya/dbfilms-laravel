@@ -57,7 +57,7 @@ class User extends Authenticatable
     }
     
     public function likedFilms() {
-        return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->where('like', 1);
+        return $this->belongsToMany('App\Film', 'User_film', 'user_id', 'film_id')->select(['id', 'name', 'image'])->where('like', 1);
     }
     
     public function seenFilms() {

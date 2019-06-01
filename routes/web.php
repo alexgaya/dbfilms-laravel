@@ -64,7 +64,8 @@ Route::resource('api/serie', 'SerieController')->middleware(ApiAuthMiddleware::c
 Route::post('api/serie/upload', 'SerieController@upload')->middleware(ApiAuthMiddleware::class);
 Route::get('api/serie/image/{filename}', 'SerieController@getImage');
 Route::get('api/serie/user/{id}', 'SerieController@getSeriesByUser')->middleware(ApiAuthMiddleware::class); 
-Route::get('api/serieseen', 'SerieController@getSeenSeriesByUser')->middleware(ApiAuthMiddleware::class); 
+Route::get('api/serieseen', 'SerieController@getSeenSeriesByUser')->middleware(ApiAuthMiddleware::class);
+Route::get('api/serielike', 'SerieController@getLikedSeriesByUser')->middleware(ApiAuthMiddleware::class);
 Route::post('api/serie/{id}/comment', 'SerieController@comment')->middleware(ApiAuthMiddleware::class);
 Route::get('api/serienopag', 'SerieController@getSeriesWithoutPaginate')->middleware(ApiAuthMiddleware::class);
 Route::get('api/seriefilter', 'SerieController@getSeriesByFilter')->middleware(ApiAuthMiddleware::class);

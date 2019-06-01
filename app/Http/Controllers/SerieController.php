@@ -425,6 +425,30 @@ class SerieController extends Controller {
                 $serie->like = false;
             }
 
+            $serie->seen = true;
+        }
+
+        return response()->json([
+                    'code' => 200,
+                    'status' => 'success',
+                    'series' => $series
+        ]);
+    }
+    
+     public function getLikedSeriesByUser(Request $request) {
+        $user = $this->getIdentity($request);
+        $series = \Illuminate\Support\Facades\DB::table('Serie')
+                ->join('User_serie', function($join) use($user) {
+                    $join->on('Serie.id', '=', 'User_serie.serie_id')
+                    ->where('User_serie.user_id', $user->sub)
+                    ->where('User_serie.like', true);
+                })
+                ->select('Serie.user_id', 'Serie.id', 'Serie.name', 'Serie.image')
+                ->paginate(12);
+
+        foreach ($series as $serie) {
+            $serie->like = true;
+
             if (UserSerie::where('serie_id', $serie->id)
                             ->where('user_id', $user->sub)
                             ->where('seen', true)

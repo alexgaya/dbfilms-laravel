@@ -340,16 +340,32 @@ class FilmController extends Controller {
 
     public function getLikedFilmsByUser(Request $request) {
         $user = $this->getIdentity($request);
-        $films = User::find($user->sub)->load('likedFilms');
-        $data = myHelpers::data("success", 200, "done");
+        $films = DB::table('Film')
+                ->join('User_film', function($join) use($user) {
+                    $join->on('Film.id', '=', 'User_film.film_id')
+                    ->where('User_film.user_id', $user->sub)
+                    ->where('User_film.like', true);
+                })
+                ->select('Film.user_id', 'Film.id', 'Film.name', 'Film.image')
+                ->paginate(12);
 
-        if (empty($films)) {
-            $data = myHelpers::data("error", 500, "Internal error");
-        } else {
-            $data["films"] = $films;
+        foreach ($films as $film) {
+            $film->like = true;
+
+            if (UserFilm::where('film_id', $film->id)
+                            ->where('user_id', $user->sub)
+                            ->where('seen', true)
+                            ->exists()) {
+                $film->seen = true;
+            } else {
+                $film->seen = false;
+            }
         }
-
-        return response()->json($data, $data["code"]);
+        return response()->json([
+                    'code' => 200,
+                    'status' => 'success',
+                    'films' => $films
+        ]);
     }
 
     public function getFilmsByFilter(Request $request) {
@@ -423,20 +439,8 @@ class FilmController extends Controller {
     }
 
     public function getSeenFilmsByUser(Request $request) {
-//        $user = $this->getIdentity($request);
-//        $films = User::find($user->sub)->seenFilms;
-//        $data = myHelpers::data("success", 200, "done");
-//
-//        if (empty($films)) {
-//            $data = myHelpers::data("error", 500, "Internal error");
-//        } else {
-//            $data["films"] = $films;
-//        }
-//
-//        return response()->json($data, $data["code"]);
         $user = $this->getIdentity($request);
         $films = DB::table('Film')
-                //->join('User_film', 'Film.id', '=', 'User_film.film_id')
                 ->join('User_film', function($join) use($user) {
                     $join->on('Film.id', '=', 'User_film.film_id')
                     ->where('User_film.user_id', $user->sub)
@@ -455,23 +459,9 @@ class FilmController extends Controller {
                 $film->like = false;
             }
 
-            if (UserFilm::where('film_id', $film->id)
-                            ->where('user_id', $user->sub)
-                            ->where('seen', true)
-                            ->exists()) {
-                $film->seen = true;
-            } else {
-                $film->seen = false;
-            }
+            $film->seen = true;
         }
-        //var_dump($films); die();
-//        foreach ($films as $film) {
-//            if (UserFilm::where('film_id', $film->id)->where('user_id', $user->sub)->exists()) {
-//                $film->seen = true;
-//            } else {
-//                $film->seen = false;
-//            }
-//        }
+        
         return response()->json([
                     'code' => 200,
                     'status' => 'success',
